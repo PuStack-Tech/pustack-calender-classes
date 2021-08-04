@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_pustack/common/app_colors.dart';
-import 'package:flutter_pustack/home_page.dart';
+import 'package:flutter_pustack/model/live_session/live_session_model.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class EventWidget extends StatelessWidget {
-  final ClassModel model;
+  final LiveSessionModel _liveSessionModel;
   final bool isLightTheme;
 
-  EventWidget(this.model, {Key? key, this.isLightTheme = false})
+  EventWidget(this._liveSessionModel, {Key? key, this.isLightTheme = false})
       : super(key: key);
+
+  /// This method return bool value
+  /// For indicate current session was live or not
+  bool isLiveSession() {
+    return _liveSessionModel.startTime.month == DateTime.now().month &&
+        _liveSessionModel.startTime.day == DateTime.now().day &&
+        _liveSessionModel.startTime.hour == DateTime.now().hour;
+  }
 
   @override
   Widget build(BuildContext context) {
+    bool isLive = isLiveSession();
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
@@ -21,7 +30,9 @@ class EventWidget extends StatelessWidget {
                 : AppColors.calenderHoursLightBG.withOpacity(0.1),
             width: 2),
       ),
-      margin: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
+      margin: EdgeInsets.symmetric(
+        horizontal: 15,
+      ),
       padding: EdgeInsets.symmetric(horizontal: 15, vertical: 15),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -35,10 +46,10 @@ class EventWidget extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      model.subject!.toUpperCase(),
+                      _liveSessionModel.subject!.toUpperCase(),
                       style: TextStyle(
                           fontFamily: GoogleFonts.poppins().fontFamily,
-                          color: model.isLive
+                          color: isLive
                               ? AppColors.liveColor
                               : AppColors.gryTextColor,
                           fontSize: 12,
@@ -48,7 +59,7 @@ class EventWidget extends StatelessWidget {
                       height: 5,
                     ),
                     Text(
-                      model.topic!,
+                      _liveSessionModel.chapter!,
                       // "Classification of Elements in Periodic Table",
                       style: TextStyle(
                           fontFamily: GoogleFonts.poppins().fontFamily,
@@ -61,7 +72,7 @@ class EventWidget extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        if (model.isLive) ...{
+                        if (isLive) ...{
                           Container(
                             decoration: BoxDecoration(
                               color: AppColors.liveColor,
@@ -70,7 +81,7 @@ class EventWidget extends StatelessWidget {
                             padding: EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 1),
                             child: Text(
-                              model.status!,
+                              _liveSessionModel.sessionStatus!,
                               style: TextStyle(
                                 color: AppColors.white,
                                 fontWeight: FontWeight.bold,
@@ -85,8 +96,10 @@ class EventWidget extends StatelessWidget {
                           ),
                         },
                         Text(
-                          "Lesson ${model.lessonNumber} " +
-                              (!model.isLive ? "~ ${model.status}" : ""),
+                          "Lesson 1 " +
+                              (!isLive
+                                  ? "~ ${_liveSessionModel.sessionStatus}"
+                                  : ""),
                           style: TextStyle(
                             color: AppColors.gryTextColor,
                             fontSize: 13,
@@ -101,7 +114,7 @@ class EventWidget extends StatelessWidget {
               Container(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: model.isLive
+                  color: isLive
                       ? AppColors.liveColor.withOpacity(0.3)
                       : AppColors.circleBG,
                 ),
@@ -110,14 +123,14 @@ class EventWidget extends StatelessWidget {
                 child: CircleAvatar(
                   radius: 18,
                   backgroundColor:
-                      model.isLive ? AppColors.liveColor : AppColors.circleBG,
+                      isLive ? AppColors.liveColor : AppColors.circleBG,
                   foregroundColor: Colors.white,
                   child: Icon(Icons.play_arrow),
                 ),
               ),
             ],
           ),
-          SizedBox(
+          /*SizedBox(
             height: 10,
           ),
           Row(
@@ -140,7 +153,7 @@ class EventWidget extends StatelessWidget {
                 ),
               ),
             ],
-          ),
+          ),*/
         ],
       ),
     );

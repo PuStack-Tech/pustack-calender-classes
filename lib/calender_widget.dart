@@ -1,29 +1,62 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_pustack/common/app_colors.dart';
 
-import 'home_page.dart';
+import 'common/utility.dart';
+import 'model/live_session/live_session_model.dart';
 
 class CalenderWidget extends StatefulWidget {
-  final Widget? Function(BuildContext context, DateTime day, ClassModel? model)?
+  /*
+   * eventCartWidget return right side widget that display classdata card
+   */
+  final Widget? Function(
+          BuildContext context, DateTime day, LiveSessionModel? model)?
       eventCartWidget;
-  final Widget? Function(BuildContext context, DateTime day, ClassModel? model)?
+
+  /*
+   * eventCartWidget return left side widget that display hours card
+   */
+  final Widget? Function(
+          BuildContext context, DateTime day, LiveSessionModel? model)?
       eventDateWidget;
+
+  /*
+   * controlling list physics
+   */
   final ScrollPhysics? physics;
+
+  /*
+   * pass theme is light or dark
+   */
   final bool isLightTheme;
 
-  final Map<DateTime, ClassModel?> list;
-  final EdgeInsets? padding;
+  /*
+   * pass map that display in timeline
+   */
+  final Map<DateTime, LiveSessionModel?> list;
+
+  /*
+   * Add padding in Listview
+   */
+  final EdgeInsets padding;
+
+  /*
+   * For display current timeline
+   * if class data is current day class data pass true
+   */
+  final bool displayCurrentTimeline;
 
   CalenderWidget(
       {Key? key,
       this.eventCartWidget,
       this.eventDateWidget,
       required this.list,
-      this.padding,
+      this.padding = const EdgeInsets.all(0),
       this.isLightTheme = false,
-      this.physics})
+      this.physics,
+      this.displayCurrentTimeline = false})
       : super(key: key);
 
   @override
@@ -31,31 +64,124 @@ class CalenderWidget extends StatefulWidget {
 }
 
 class _CalenderWidgetState extends State<CalenderWidget> {
+  final GlobalKey _globalKey = GlobalKey();
+  DateTime _currentTime = DateTime.now();
+  double _containerHeight = 0.0;
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+
+    /// This callback user for get classes event card height
+    /// so we display red current timeline
+    SchedulerBinding.instance!.addPostFrameCallback((timeStamp) {
+      _containerHeight = _globalKey.currentContext!.size!.height;
+      print('the new height is $_containerHeight');
+      setState(() {});
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    _currentTime = DateTime.now();
     return Stack(
       children: [
-        ListView(
-          padding: widget.padding,
-          shrinkWrap: true,
-          physics: widget.physics,
-          children: [
-            for (var key in widget.list.keys) ...{
-              Container(
-                child: Row(
-                  crossAxisAlignment: widget.list[key] != null
-                      ? CrossAxisAlignment.start
-                      : CrossAxisAlignment.center,
+        ListView.builder(
+            padding: widget.padding.copyWith(top: 10),
+            shrinkWrap: true,
+            itemCount: widget.list.length,
+            physics: widget.physics,
+            itemBuilder: (context, i) {
+              var _key = widget.list.keys.toList()[i];
+              var _showCurrentTime = false;
+              var _timeDiffInMinutes = 0;
+              if (i != 0 && i != widget.list.keys.length - 1) {
+                var nextKey = widget.list.keys.toList()[i + 1];
+                _timeDiffInMinutes =
+                    Utility.findDifferenceInMinutes(_key, nextKey);
+
+                _showCurrentTime =
+                    Utility.findDifferenceInMinutes(_currentTime, _key)
+                            .isNegative &&
+                        !Utility.findDifferenceInMinutes(_currentTime, nextKey)
+                            .isNegative;
+
+                if (_key.hour == _currentTime.hour &&
+                    _key.minute == _currentTime.minute) {
+                  _showCurrentTime = true;
+                }
+                if (nextKey.hour == _currentTime.hour &&
+                    nextKey.minute == _currentTime.minute) {
+                  _showCurrentTime = false;
+                }
+                print("${_showCurrentTime}");
+                print("========== ");
+              }
+              return Container(
+                key: _showCurrentTime ? _globalKey : null,
+                child: Stack(
                   children: [
-                    widget.eventDateWidget!(context, key, widget.list[key])!,
-                    widget.eventCartWidget!(context, key, widget.list[key])!,
+                    Container(
+                      margin: EdgeInsets.only(bottom: 20),
+                      child: Row(
+                        crossAxisAlignment:
+                            /*widget.list[key] != null
+                            ? CrossAxisAlignment.start
+                            :*/
+                            CrossAxisAlignment.start,
+                        children: [
+                          widget.eventDateWidget!(
+                              context, _key, widget.list[_key])!,
+                          widget.eventCartWidget!(
+                              context, _key, widget.list[_key])!,
+                        ],
+                      ),
+                    ),
+                    if (_showCurrentTime && widget.displayCurrentTimeline) ...{
+                      Positioned(
+                        top: _currentTime.minute - _key.minute == 0
+                            ? (widget.list[_key] != null ? 0 : 0)
+                            : ((_containerHeight *
+                                        (_currentTime.minute -
+                                            widget.list.keys
+                                                .toList()[i]
+                                                .minute)) /
+                                    _timeDiffInMinutes) +
+                                (widget.list[_key] != null ? -1 : -1),
+                        left: 0,
+                        right: 0,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              height: 10,
+                              width: 10,
+                              margin: EdgeInsets.only(left: 15),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: AppColors.liveColor,
+                              ),
+                            ),
+                            Expanded(
+                              child: Container(
+                                height: 3,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: AppColors.liveColor,
+                                ),
+                              ),
+                            )
+                          ],
+                        ),
+                      ),
+                    }
                   ],
                 ),
-              )
-            }
-          ],
-        ),
-        // FadeEndListview(),
+              );
+            }),
+
+        /// Show fade-in and fade-out effect while list scroll
         Positioned(
           top: 0,
           left: MediaQuery.of(context).size.width / 6,
@@ -110,34 +236,6 @@ class _CalenderWidgetState extends State<CalenderWidget> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class FadeEndListview extends StatelessWidget {
-  const FadeEndListview({
-    Key? key,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      top: 0,
-      width: MediaQuery.of(context).size.width,
-      height: 20,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            stops: [0.0, 1.0],
-            colors: [
-              /*Colors.grey.withOpacity(0.3),
-              Colors.grey.withOpacity(0.0),*/
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
