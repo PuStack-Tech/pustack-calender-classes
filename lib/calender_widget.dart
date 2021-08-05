@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -46,7 +47,7 @@ class CalenderWidget extends StatefulWidget {
    * For display current timeline
    * if class data is current day class data pass true
    */
-  final bool displayCurrentTimeline;
+  final bool? displayCurrentTimeline;
 
   CalenderWidget(
       {Key? key,
@@ -56,7 +57,7 @@ class CalenderWidget extends StatefulWidget {
       this.padding = const EdgeInsets.all(0),
       this.isLightTheme = false,
       this.physics,
-      this.displayCurrentTimeline = false})
+      this.displayCurrentTimeline})
       : super(key: key);
 
   @override
@@ -67,11 +68,22 @@ class _CalenderWidgetState extends State<CalenderWidget> {
   final GlobalKey _globalKey = GlobalKey();
   DateTime _currentTime = DateTime.now();
   double _containerHeight = 0.0;
+  late bool _displayCurrentTimeline = false;
 
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
+    if (widget.displayCurrentTimeline != null) {
+      _displayCurrentTimeline = widget.displayCurrentTimeline!;
+    } else {
+      _displayCurrentTimeline = Utility.isToday(widget.list.keys.first);
+    }
+
+    ///
+    Timer.periodic(Duration(minutes: 1), (Timer t) {
+      setState(() {});
+    });
 
     /// This callback user for get classes event card height
     /// so we display red current timeline
@@ -85,6 +97,8 @@ class _CalenderWidgetState extends State<CalenderWidget> {
   @override
   Widget build(BuildContext context) {
     _currentTime = DateTime.now();
+    // _currentTime = DateTime(
+    //     DateTime.now().year, DateTime.now().month, DateTime.now().day, 8, 30);
     return Stack(
       children: [
         ListView.builder(
@@ -96,7 +110,7 @@ class _CalenderWidgetState extends State<CalenderWidget> {
               var _key = widget.list.keys.toList()[i];
               var _showCurrentTime = false;
               var _timeDiffInMinutes = 0;
-              if (i != 0 && i != widget.list.keys.length - 1) {
+              if (i != widget.list.keys.length - 1) {
                 var nextKey = widget.list.keys.toList()[i + 1];
                 _timeDiffInMinutes =
                     Utility.findDifferenceInMinutes(_key, nextKey);
@@ -115,6 +129,7 @@ class _CalenderWidgetState extends State<CalenderWidget> {
                     nextKey.minute == _currentTime.minute) {
                   _showCurrentTime = false;
                 }
+                print("${_timeDiffInMinutes}");
                 print("${_showCurrentTime}");
                 print("========== ");
               }
@@ -125,11 +140,9 @@ class _CalenderWidgetState extends State<CalenderWidget> {
                     Container(
                       margin: EdgeInsets.only(bottom: 20),
                       child: Row(
-                        crossAxisAlignment:
-                            /*widget.list[key] != null
+                        crossAxisAlignment: widget.list[_key] != null
                             ? CrossAxisAlignment.start
-                            :*/
-                            CrossAxisAlignment.start,
+                            : CrossAxisAlignment.center,
                         children: [
                           widget.eventDateWidget!(
                               context, _key, widget.list[_key])!,
@@ -138,17 +151,13 @@ class _CalenderWidgetState extends State<CalenderWidget> {
                         ],
                       ),
                     ),
-                    if (_showCurrentTime && widget.displayCurrentTimeline) ...{
+                    if (_showCurrentTime && _displayCurrentTimeline) ...{
                       Positioned(
-                        top: _currentTime.minute - _key.minute == 0
-                            ? (widget.list[_key] != null ? 0 : 0)
-                            : ((_containerHeight *
-                                        (_currentTime.minute -
-                                            widget.list.keys
-                                                .toList()[i]
-                                                .minute)) /
-                                    _timeDiffInMinutes) +
-                                (widget.list[_key] != null ? -1 : -1),
+                        top: ((_containerHeight - 10) *
+                                    Utility.findDifferenceInMinutes(
+                                        _key, _currentTime)) /
+                                _timeDiffInMinutes +
+                            (widget.list[_key] != null ? -5 : -0),
                         left: 0,
                         right: 0,
                         child: Row(

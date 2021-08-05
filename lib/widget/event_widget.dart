@@ -15,7 +15,8 @@ class EventWidget extends StatelessWidget {
   bool isLiveSession() {
     return _liveSessionModel.startTime.month == DateTime.now().month &&
         _liveSessionModel.startTime.day == DateTime.now().day &&
-        _liveSessionModel.startTime.hour == DateTime.now().hour;
+        _liveSessionModel.startTime.hour == DateTime.now().hour &&
+        _liveSessionModel.startTime.minute <= DateTime.now().minute;
   }
 
   @override
